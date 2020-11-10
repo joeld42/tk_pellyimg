@@ -4,12 +4,16 @@
 
 On demand image processing and thumbnailing for the Pelican static site generator.
 
+NOTE: Under construction don't use it yet.
+
 Installation
 ------------
 
 This plugin can be installed via:
 
     python -m pip install pelican-tkpellyimg
+
+(except not really)
 
 Contributing
 ------------
