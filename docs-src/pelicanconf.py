@@ -30,7 +30,7 @@ MARKDOWN = {
     'output_format': 'html5',
 }
 # Uncomment following line if you want document-relative URLs when developing
-RELATIVE_URLS = True
+# RELATIVE_URLS = True
 
 # Supress most of the autogeneraed pages since this is just docs
 YEAR_ARCHIVE_SAVE_AS = ''
