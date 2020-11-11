@@ -8,7 +8,7 @@ SITEURL = ''
 PATH = 'content'
 
 # Put output path here for github pages nonsense
-OUTPUT_PATH = '..'
+OUTPUT_PATH = 'output'
 
 TIMEZONE = 'America/Los_Angeles'
 
