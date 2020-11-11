@@ -1,0 +1,210 @@
+title: TkPellyImg Docs
+slug: docs
+date: 2020-09-10
+modified: 2020-09-10
+
+
+TkPellyImg Documentation and Examples
+-----
+TkPellyImg adds image-processing features that you can apply during static site generation. For example,
+it can generate thumbnails from images, or add badges or text. It is customizable so you can add your 
+own custom image processing operations using [Python PIL](https://pillow.readthedocs.io/en/stable/) code.
+
+
+Basic Usage
+---
+To apply TkPellyImg, just add the operations as a suffix to the image source. The image processing happens after
+HTML is generated, so this can be in the markdown source,  in the theme template, or even in a jinja macro. 
+
+For example, this will take a high-resolution image of a sandwich and generate a smaller 200px wide thumbnail:
+```markdown
+Here is a sandwich:
+
+![A Tasty Sandwich](/images/sandwich.jpg@resize(200) )
+``` 
+Here is a sandwich:
+
+![A Tasty Sandwich](/images/sandwich.jpg@resize(200) )
+
+You can include multiple commands, which will be applied in order:
+
+```markdown
+This is a blurry sandwich:
+
+![A Blurry Sandwich](/images/sandwich.jpg@resize(200)@blur(10) )
+``` 
+This is a blurry sandwich:
+
+![A Blurry Sandwich](/images/sandwich.jpg@resize(200)@blur(10) )
+
+
+Built-in Commands
+---
+
+There are only a few built-in commands currently, mostly just want I needed for my current project. Still, it 
+should be enough to cover the most common use cases. If you need more, look at custom commands below, or 
+contact me and I'll attempt to add some next time I'm working on this.
+
+```@resize(width,[height])```
+--
+This will resize an image to the given size. If width or height is zero (or if height is omitted) it will calculate it
+from the other value and preserve aspect. 
+
+```markdown
+![Small Sandwich](/images/sandwich.jpg@resize(200) )
+![Small Cake](/images/cake.jpg@resize(200) )
+![Squashed Beans](/images/beans.jpg@resize(100,200) )
+``` 
+![Small Sandwich](/images/sandwich.jpg@resize(200) )
+![Small Cake](/images/cake.jpg@resize(200) )
+![Squashed Beans](/images/beans.jpg@resize(100,200) )
+
+
+```@fit(width,[height])```
+--
+This will resize an image to the given width and height. If only one dimension is given it assumes you want a square image.
+Unlike resize, if the image aspect differs from the target size, it will crop the result so you get the best fit without stretching. It is good for making thumbnails or image grids. 
+
+```markdown
+![Square Sandwich](/images/sandwich.jpg@fit(200) )
+![Square Cake](/images/cake.jpg@fit(200) )
+![Squashed Beans](/images/beans.jpg@fit(100,200) )
+``` 
+![Square Sandwich](/images/sandwich.jpg@fit(200) )
+![Square Cake](/images/cake.jpg@fit(200) )
+![Squashed Beans](/images/beans.jpg@fit(100,200) )
+
+```@blur(radius)```
+--
+Applies a gaussian blur of the given radius. 
+```
+![A Regular Salad](/images/salad.jpg@resize(200) )
+![A Blurry Salad](/images/salad.jpg@resize(200)@blur(5) )
+![A Very Blurry Salad](/images/salad.jpg@resize(200)@blur(20) )
+``` 
+![A Regular Salad](/images/salad.jpg@resize(200) )
+![A Blurry Salad](/images/salad.jpg@resize(200)@blur(5) )
+![A Very Blurry Salad](/images/salad.jpg@resize(200)@blur(20) )
+
+
+Placeholders and non-existing images
+---
+If an image doesn't exist, `tkpellyimg` will create an empty 10x10 image. The filename is still
+important, as that determines the base filename and what format the image gets saved to.
+
+Some command ignore the source image. You can use these to generate a new image, as a placeholder
+for design or even a stand-in or default image. 
+
+```@blank(width,[height],[basecolor])```
+--
+``` 
+![A green square](/images/greensquare.jpg@blank(100,100,green) )
+![A blue square](/images/bluesquare.jpg@blank(100,100,#add8e6) )
+
+``` 
+![A green square](/images/greensquare.jpg@blank(100,100,green) )
+![A blue square](/images/bluesquare.jpg@blank(100,100,#add8e6) )
+
+Note: because generating a blank image counts as an image processing operation, you don't need to
+ensure the name is unique, it will be hashed as usual.
+
+```@placeholder(width,[height],[text],[basecolor],[textcolor])```
+--
+Creates a placeholder image, useful for working on layout before artwork is available. By default the
+placeholder text will be the size of the image.
+``` 
+![Default Placeholder](/images/lorem.png@placeholder(200,120) )
+![Fancy Placeholder](/images/lorem.png@placeholder(120,120,Burger,orange) )
+![Fancy Placeholder](/images/lorem.png@placeholder(120,120,Salad,#aff57a,green) )
+``` 
+![Default Placeholder](/images/lorem.png@placeholder(200,120) )
+![Fancy Placeholder](/images/lorem.png@placeholder(120,120,Burger,orange) )
+![Fancy Placeholder](/images/lorem.png@placeholder(120,120,Salad,#aff57a,green) )
+
+You can specify which font to use in `TKPELLYIMG_PLACEHOLDER_FONT` as a path relative to the output
+directory (probably in your theme dir), and the fontsize with `TKPELLYIMG_PLACEHOLDER_FONTSIZE` (default 12). 
+
+
+Placeholders are just regular images, so you may of course apply further image processing operations to them. 
+
+``` 
+![Default Placeholder](/images/lorem.png@placeholder(80,80,Woah,#b68ee8)@blur(10)@newbadge )
+``` 
+![Default Placeholder](/images/lorem.png@placeholder(80,80,Woah,#b68ee8)@blur(2)@newbadge() )
+
+
+
+Custom Commands
+---
+The commands in the image processing stack are very simple, and can be defined in other plugins or even
+in your Pelican config script. A command should take three arguments, first is the settings dictionary
+from Pelican (which you can use to add additional controls, e.g. see `TKPELLYIMG_PLACEHOLDER_FONT`, 
+second is the image to process (as `PIL Image` object), and the third is a list of arguments that 
+are passed to the command. Right now the arguments are all passed as strings so it is up to the 
+command to parse them, this is one thing that I might change or formalize in the future. 
+
+The command should return the processed image.
+
+For example, including this in your `pelicanconf.py` would register two simple commands:
+```python
+
+# Example custom actions for TKPELLYIMG
+import os
+import pelican.plugins.tkpellyimg as tkimg
+from PIL import Image, ImageFilter, ImageColor, ImageDraw, ImageFont
+def img_new_badge( cfg, srcImage, imgArgs ):	
+	badgeImg = Image.open( os.path.join( cfg["OUTPUT_PATH"], "images", "new_badge.png"))
+	srcImage.paste( badgeImg, (0,0), badgeImg )
+	return srcImage
+
+def img_caption( cfg, srcImage, imgArgs ):
+	captionText = imgArgs[0]
+	captionColor = ImageColor.getrgb( imgArgs[1])
+	draw = ImageDraw.Draw( srcImage )
+	font = ImageFont.truetype( os.path.join( cfg["OUTPUT_PATH"], "theme/fonts/Yanone_Kaffeesatz_400.ttf" ), 30 )
+	draw.rectangle( (0, srcImage.size[1]-40, srcImage.size[0], srcImage.size[1]), fill=(0,0,20))
+	draw.text( (10, srcImage.size[1]-30), captionText, fill=captionColor, font=font )
+	
+	return srcImage
+
+
+tkimg.RegisterImgCommand( "newbadge", img_new_badge )
+tkimg.RegisterImgCommand( "caption", img_caption )
+
+```
+
+Which you could then use like this:
+```
+![Test Badge](/images/salad.jpg@fit(180)@caption( Salad Yums, lightgreen) )
+![Test Badge](/images/cake.jpg@fit(200,180)@newbadge()@caption( Try Some Cake, #09e8d2) )
+```
+![Test Badge](/images/salad.jpg@fit(180)@caption( Salad Yums, lightgreen) )
+![Test Badge](/images/cake.jpg@fit(200,180)@newbadge()@caption( Try Some Cake, #09e8d2) )
+
+Remember that the image will be updated if the arguments change, but not if the command code itself changes.
+During development, you may need to delete the image in the output directory to force it to rebuild for
+testing.
+
+If you're doing a lot of this, you'll probably want to put these in a module rather than in the bare config
+file.
+
+
+Advanced Tip: Mixing with Jinja Macros
+---
+
+Mixing the image processing with jinja macros can create some powerful workflow tools. For example,
+here's a jinja macro I'm using to create a downscaled preview of an image that links to the original.
+
+![Macro Example](/images/macro_example.png)
+
+With this defined, I can use the [https://github.com/pelican-plugins/jinja2content](jinja2content) plugin to include the image right into a post:
+
+![Example Markdown](/images/diag_example.png)
+
+And in the resulting page, the reader sees a small auto-generated preview image, and can click 
+to get the full size image. Very convienent.
+
+Further Information
+---
+
+These docs use `TkPellyImg` to generate the examples, so they are a good place to look. Also feel free to contact me through twitter (`@joeld42`) or email (`joeld42@gmail.com`) if you have any questions, or submit an issue through the github page. 

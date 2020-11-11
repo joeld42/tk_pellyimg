@@ -3,12 +3,13 @@ import re
 import logging
 import hashlib
 import base64
+import colorsys
 
 import pelican
 
 from bs4 import BeautifulSoup
 
-from PIL import Image
+from PIL import Image, ImageFilter, ImageColor, ImageDraw, ImageFont
 
 log = logging.getLogger(__name__)
 
@@ -20,9 +21,10 @@ imgCmdTable = {}
 
 _uniqHash = {} # short hash -> full hash
 
-reImgCommand = re.compile( r"@\s*(?P<cmd>[A-Za-z0-9]+)\s*\((?P<args>[A-Za-z0-9\,\.\s\#\-\+]*)\)?" )
+reImgCommand = re.compile( r"@\s*(?P<cmd>[A-Za-z0-9]+)\s*\((?P<args>[A-Za-z0-9\,\.\s\#\-\+\%\[\]]*)\)?" )
 
-
+kCfgPlaceholderFont = 'TKPELLYIMG_PLACEHOLDER_FONT'
+kCfgPlaceholderFontsize = 'TKPELLYIMG_PLACEHOLDER_FONTSIZE'
 
 def RegisterImgCommand( cmdName, cmdFunc ):
     log.debug("Will register command %s", cmdName )
@@ -30,9 +32,10 @@ def RegisterImgCommand( cmdName, cmdFunc ):
     if cmdName in imgCmdTable:
         log.warn( "TkPellyImg: Command %s already registered, will be replaced.", cmdName )
 
+    log.info("Registed command '%s'", cmdName )
     imgCmdTable[ cmdName ] = cmdFunc
 
-def imgCmdResize( srcImg, imgArgs ):
+def imgCmdResize( cfg, srcImg, imgArgs ):
 
     # if the user only specifies one value, assume it's the width
     print ("imgArgs is ", imgArgs )
@@ -50,10 +53,117 @@ def imgCmdResize( srcImg, imgArgs ):
         targetSize = ( targetSize[0], int(targetSize[0] * (1.0/aspect) ) )
 
     log.debug( "Will resize img to %s", str( targetSize ) )
-    resultImg = srcImg.resize( targetSize )
+    resultImg = srcImg.resize( targetSize, Image.ANTIALIAS )
 
     return resultImg
 
+def imgCmdFit( cfg, srcImg, imgArgs ):
+
+    # if the user only specifies one value, assume they want a square
+    targetSize = tuple( map( lambda x: int(x), (imgArgs + [ 0 ])[:2] ) )
+    if targetSize[1] == 0:
+        targetSize = ( targetSize[0], targetSize[0] )
+
+    # Crop the largest size of the source image to fit
+    srcAspect = float(srcImg.size[0]) / float(srcImg.size[1])
+    targetAspect = float(targetSize[0]) / float(targetSize[1])
+    if srcAspect >= targetAspect:
+        # Crop horizontally
+        cropWidth = int(targetAspect * srcImg.size[1])
+        cropOffs = int( (srcImg.size[0] - cropWidth) / 2.0)
+        cropRect = (cropOffs, 0, srcImg.size[0] - cropOffs, srcImg.size[1] )
+    else:
+        # Crop Vertically
+        cropHeight = int(srcImg.size[0] / targetAspect)
+        cropOffs = int((srcImg.size[1] - cropHeight) / 2.0)
+        cropRect = (0, cropOffs, srcImg.size[0], srcImg.size[1] - cropOffs )
+
+    cropImg = srcImg.crop( cropRect ).resize( targetSize, Image.ANTIALIAS )
+    return cropImg
+
+def imgCmdBlur( cfg, srcImg, imgArgs ):
+
+    blurSize = int(imgArgs[0])
+    print("will blur, size %f", blurSize )
+    resultImg = srcImg.filter( ImageFilter.GaussianBlur(blurSize) )
+
+    return resultImg
+
+def imgCmdPlaceholder( cfg, srcImg, imgArgs ):
+
+    # srcImg is ignored.
+    targetWidth = int(imgArgs[0])
+    if len(imgArgs) > 1:
+        targetHeight = int(imgArgs[1])
+    else:
+        targetHeight = targetWidth
+
+    print("In imgCmdPlaceholder")
+
+    # Placeholder text, default to image size
+    if len(imgArgs) > 2:
+        placeholderText = imgArgs[2]
+    else:
+        placeholderText = "%dx%d" % (targetWidth, targetHeight)
+
+    if len(imgArgs) > 3:
+        targetColor = ImageColor.getrgb( imgArgs[3] )
+    else:
+        # Default, use a middle grey
+        targetColor = ( 100, 100, 100 )
+
+    if len(imgArgs) > 4:
+        lineColor = ImageColor.getrgb( imgArgs[4])
+    else:
+        # By default, generate a close tint for the text
+        log.debug("Generating line color")
+        hsv = colorsys.rgb_to_hsv( float(targetColor[0]) / 255.0, float(targetColor[1]) / 255.0, float(targetColor[2]) / 255.0 )
+        if (hsv[2] < 0.5):
+            lineHsv = ( hsv[0], hsv[1], hsv[2] + 0.25 )
+        else:
+            lineHsv = (hsv[0], hsv[1], hsv[2] - 0.25)
+
+        lineColor = tuple(map( lambda x: int( x * 255.0), colorsys.hsv_to_rgb( *lineHsv ) ))
+
+    log.debug("Gen image")
+    resultImg = Image.new( "RGB", (targetWidth, targetHeight), targetColor )
+
+    draw = ImageDraw.Draw( resultImg )
+    draw.line( (0, 0, targetWidth, targetHeight), fill=lineColor )
+    draw.line( (0, targetHeight, targetWidth, 0), fill=lineColor )
+    draw.rectangle( (0, 0, targetWidth-1, targetHeight-1), outline=lineColor, width=2 )
+
+    # Get font from settings
+    if kCfgPlaceholderFont in cfg:
+        fontName = cfg[kCfgPlaceholderFont]
+        fontSize = cfg.get( kCfgPlaceholderFontsize, 12 )
+        font = ImageFont.truetype( os.path.join( cfg["OUTPUT_PATH"], fontName ), 36 )
+    else:
+        # No font specificed, use the tiny PIL default font
+        font = draw.getfont()
+
+    textSize = font.getsize( placeholderText )
+    textPos = ( int( (targetWidth - textSize[0])/2.0), int( (targetHeight - textSize[1])/2.0) )
+    draw.text( textPos, placeholderText, fill=lineColor, font = font )
+
+    return resultImg
+
+def imgCmdBlank( cfg, srcImg, imgArgs ):
+
+    # srcImg is ignored.
+    targetWidth = int(imgArgs[0])
+    if len(imgArgs) > 1:
+        targetHeight = int(imgArgs[1])
+    else:
+        targetHeight = targetWidth
+
+    if len(imgArgs) > 2:
+        targetColor = ImageColor.getrgb( imgArgs[2] )
+    else:
+        targetColor = (0,0,0)
+
+    resultImg = Image.new( "RGB", (targetWidth, targetHeight), targetColor )
+    return resultImg
 
 
 class TkImgProcessStack:
@@ -140,7 +250,7 @@ def _parseImgProcessCmds( imgsrc ):
         imgName = imgsrc[:suffix]
 
         cmdList = []
-        for m in reImgCommand.finditer( imgsrc.lower() ):
+        for m in reImgCommand.finditer( imgsrc ):
             cmd = m.group( 'cmd' )
             args = list( map( lambda x: x.strip(), m.group( 'args' ).split(',') ) )
             cmdList.append( (cmd, args) )
@@ -214,11 +324,18 @@ def dbg_dump_settings( generator ):
         print("%40s - %s" % (k, str(generator.settings[k])))
 
 def file_needs_update( srcFile, destFile ):
+
     if not os.path.exists( destFile ):
-        # Dest file does not exist
+        # dest does not exist
         return True
 
     destmtime = os.path.getmtime( destFile )
+
+    if not os.path.exists(srcFile):
+        # No source file exists, e.g. the image is generated.
+        return True # dbg
+        #return False
+
     srcmtime = os.path.getmtime( srcFile )
 
     if srcmtime >= destmtime:
@@ -245,7 +362,13 @@ def generate_imgs( generator ):
         if not file_needs_update( srcImgPath, destImgPath ):
             log.info("TkPellyImg: %s is up to date.", imgProc.processedSrc )
         else:
-            currImg = Image.open( srcImgPath )
+            if os.path.exists( srcImgPath ):
+                currImg = Image.open( srcImgPath )
+            else:
+                # If src image doesnt exist, use a 10x10 transparent image
+                print("Generating image for ", srcImgPath)
+                currImg = Image.new( "RGB", (10,10), (0,0,0))
+
             for imgCmd in imgProc.cmdList:
 
                 print('  CMDz: %s' % str(imgCmd))
@@ -253,7 +376,7 @@ def generate_imgs( generator ):
                 if cmdFunc is None:
                     log.warn( "TkPellyImg: No command registered '%s'.", imgCmd[0] )
                 else:
-                    result = cmdFunc( currImg, imgCmd[1] )
+                    result = cmdFunc( generator.settings, currImg, imgCmd[1] )
                     currImg = result
 
             log.info("TkPellyImg: Writing processed Image: '%s'", imgProc.processedSrc )
@@ -273,6 +396,10 @@ def register_builtin_commands():
 
     # Register our built-in image commands
     RegisterImgCommand( "resize", imgCmdResize )
+    RegisterImgCommand( "fit", imgCmdFit)
+    RegisterImgCommand( "blur", imgCmdBlur)
+    RegisterImgCommand( "blank", imgCmdBlank)
+    RegisterImgCommand( "placeholder", imgCmdPlaceholder)
 
 def register():
     pelican.signals.initialized.connect(init_img_gen)

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="Pelican" name="generator"/>
+<title>TkPellyImg Docs</title>
+<link href="../theme/css/main.css" rel="stylesheet"/>
+</head>
+<body class="home" id="index">
+<header class="body" id="banner">
+<h1><a href="../">Documentation</a></h1>
+<nav><ul>
+<li class="active"><a href="../pages/docs.html">TkPellyImg Docs</a></li>
+</ul></nav>
+</header><!-- /#banner -->
+<section class="body" id="content">
+<h1 class="entry-title">TkPellyImg Docs</h1>
+<h2>TkPellyImg Documentation and Examples</h2>
+<p>TkPellyImg adds image-processing features that you can apply during static site generation. For example,
+it can generate thumbnails from images, or add badges or text. It is customizable so you can add your 
+own custom image processing operations using <a href="https://pillow.readthedocs.io/en/stable/">Python PIL</a> code.</p>
+<h2>Basic Usage</h2>
+<p>To apply TkPellyImg, just add the operations as a suffix to the image source. The image processing happens after
+HTML is generated, so this can be in the markdown source,  in the theme template, or even in a jinja macro. </p>
+<p>For example, this will take a high-resolution image of a sandwich and generate a smaller 200px wide thumbnail:</p>
+<div class="highlight"><pre><span></span><code>Here is a sandwich:
+
+![A Tasty Sandwich](/images/sandwich.jpg@resize(200) )
+</code></pre></div>
+<p>Here is a sandwich:</p>
+<p><img alt="A Tasty Sandwich" src="/images/sandwich_3Q9.jpg"/></p>
+<p>You can include multiple commands, which will be applied in order:</p>
+<div class="highlight"><pre><span></span><code>This is a blurry sandwich:
+
+![A Blurry Sandwich](/images/sandwich.jpg@resize(200)@blur(10) )
+</code></pre></div>
+<p>This is a blurry sandwich:</p>
+<p><img alt="A Blurry Sandwich" src="/images/sandwich_Juo.jpg"/></p>
+<h2>Built-in Commands</h2>
+<p>There are only a few built-in commands currently, mostly just want I needed for my current project. Still, it 
+should be enough to cover the most common use cases. If you need more, look at custom commands below, or 
+contact me and I'll attempt to add some next time I'm working on this.</p>
+<h2><code>@resize(width,[height])</code></h2>
+<p>This will resize an image to the given size. If width or height is zero (or if height is omitted) it will calculate it
+from the other value and preserve aspect. </p>
+<div class="highlight"><pre><span></span><code>![Small Sandwich](/images/sandwich.jpg@resize(200) )
+![Small Cake](/images/cake.jpg@resize(200) )
+![Squashed Beans](/images/beans.jpg@resize(100,200) )
+</code></pre></div>
+<p><img alt="Small Sandwich" src="/images/sandwich_3Q9.jpg"/>
+<img alt="Small Cake" src="/images/cake_Xe9.jpg"/>
+<img alt="Squashed Beans" src="/images/beans_DzY.jpg"/></p>
+<h2><code>@fit(width,[height])</code></h2>
+<p>This will resize an image to the given width and height. If only one dimension is given it assumes you want a square image.
+Unlike resize, if the image aspect differs from the target size, it will crop the result so you get the best fit without stretching. It is good for making thumbnails or image grids. </p>
+<div class="highlight"><pre><span></span><code>![Square Sandwich](/images/sandwich.jpg@fit(200) )
+![Square Cake](/images/cake.jpg@fit(200) )
+![Squashed Beans](/images/beans.jpg@fit(100,200) )
+</code></pre></div>
+<p><img alt="Square Sandwich" src="/images/sandwich_FSx.jpg"/>
+<img alt="Square Cake" src="/images/cake_BO7.jpg"/>
+<img alt="Squashed Beans" src="/images/beans_13K.jpg"/></p>
+<h2><code>@blur(radius)</code></h2>
+<p>Applies a gaussian blur of the given radius. </p>
+<div class="highlight"><pre><span></span><code>![A Regular Salad](/images/salad.jpg@resize(200) )
+![A Blurry Salad](/images/salad.jpg@resize(200)@blur(5) )
+![A Very Blurry Salad](/images/salad.jpg@resize(200)@blur(20) )
+</code></pre></div>
+<p><img alt="A Regular Salad" src="/images/salad_l5m.jpg"/>
+<img alt="A Blurry Salad" src="/images/salad_G8W.jpg"/>
+<img alt="A Very Blurry Salad" src="/images/salad_A5K.jpg"/></p>
+<h2>Placeholders and non-existing images</h2>
+<p>If an image doesn't exist, <code>tkpellyimg</code> will create an empty 10x10 image. The filename is still
+important, as that determines the base filename and what format the image gets saved to.</p>
+<p>Some command ignore the source image. You can use these to generate a new image, as a placeholder
+for design or even a stand-in or default image. </p>
+<h2><code>@blank(width,[height],[basecolor])</code></h2>
+<div class="highlight"><pre><span></span><code>![A green square](/images/greensquare.jpg@blank(100,100,green) )
+![A blue square](/images/bluesquare.jpg@blank(100,100,#add8e6) )
+</code></pre></div>
+<p><img alt="A green square" src="/images/greensquare_waK.jpg"/>
+<img alt="A blue square" src="/images/bluesquare_Frb.jpg"/></p>
+<p>Note: because generating a blank image counts as an image processing operation, you don't need to
+ensure the name is unique, it will be hashed as usual.</p>
+<h2><code>@placeholder(width,[height],[text],[basecolor],[textcolor])</code></h2>
+<p>Creates a placeholder image, useful for working on layout before artwork is available. By default the
+placeholder text will be the size of the image.</p>
+<div class="highlight"><pre><span></span><code>![Default Placeholder](/images/lorem.png@placeholder(200,120) )
+![Fancy Placeholder](/images/lorem.png@placeholder(120,120,Burger,orange) )
+![Fancy Placeholder](/images/lorem.png@placeholder(120,120,Salad,#aff57a,green) )
+</code></pre></div>
+<p><img alt="Default Placeholder" src="/images/lorem_dIi.png"/>
+<img alt="Fancy Placeholder" src="/images/lorem_K9B.png"/>
+<img alt="Fancy Placeholder" src="/images/lorem_oB0.png"/></p>
+<p>You can specify which font to use in <code>TKPELLYIMG_PLACEHOLDER_FONT</code> as a path relative to the output
+directory (probably in your theme dir), and the fontsize with <code>TKPELLYIMG_PLACEHOLDER_FONTSIZE</code> (default 12). </p>
+<p>Placeholders are just regular images, so you may of course apply further image processing operations to them. </p>
+<div class="highlight"><pre><span></span><code>![Default Placeholder](/images/lorem.png@placeholder(80,80,Woah,#b68ee8)@blur(10)@newbadge )
+</code></pre></div>
+<p><img alt="Default Placeholder" src="/images/lorem_gfX.png"/></p>
+<h2>Custom Commands</h2>
+<p>The commands in the image processing stack are very simple, and can be defined in other plugins or even
+in your Pelican config script. A command should take three arguments, first is the settings dictionary
+from Pelican (which you can use to add additional controls, e.g. see <code>TKPELLYIMG_PLACEHOLDER_FONT</code>, 
+second is the image to process (as <code>PIL Image</code> object), and the third is a list of arguments that 
+are passed to the command. Right now the arguments are all passed as strings so it is up to the 
+command to parse them, this is one thing that I might change or formalize in the future. </p>
+<p>The command should return the processed image.</p>
+<p>For example, including this in your <code>pelicanconf.py</code> would register two simple commands:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Example custom actions for TKPELLYIMG</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pelican.plugins.tkpellyimg</span> <span class="k">as</span> <span class="nn">tkimg</span>
+<span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span><span class="p">,</span> <span class="n">ImageFilter</span><span class="p">,</span> <span class="n">ImageColor</span><span class="p">,</span> <span class="n">ImageDraw</span><span class="p">,</span> <span class="n">ImageFont</span>
+<span class="k">def</span> <span class="nf">img_new_badge</span><span class="p">(</span> <span class="n">cfg</span><span class="p">,</span> <span class="n">srcImage</span><span class="p">,</span> <span class="n">imgArgs</span> <span class="p">):</span>    
+    <span class="n">badgeImg</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">"OUTPUT_PATH"</span><span class="p">],</span> <span class="s2">"images"</span><span class="p">,</span> <span class="s2">"new_badge.png"</span><span class="p">))</span>
+    <span class="n">srcImage</span><span class="o">.</span><span class="n">paste</span><span class="p">(</span> <span class="n">badgeImg</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="n">badgeImg</span> <span class="p">)</span>
+    <span class="k">return</span> <span class="n">srcImage</span>
+
+<span class="k">def</span> <span class="nf">img_caption</span><span class="p">(</span> <span class="n">cfg</span><span class="p">,</span> <span class="n">srcImage</span><span class="p">,</span> <span class="n">imgArgs</span> <span class="p">):</span>
+    <span class="n">captionText</span> <span class="o">=</span> <span class="n">imgArgs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">captionColor</span> <span class="o">=</span> <span class="n">ImageColor</span><span class="o">.</span><span class="n">getrgb</span><span class="p">(</span> <span class="n">imgArgs</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">draw</span> <span class="o">=</span> <span class="n">ImageDraw</span><span class="o">.</span><span class="n">Draw</span><span class="p">(</span> <span class="n">srcImage</span> <span class="p">)</span>
+    <span class="n">font</span> <span class="o">=</span> <span class="n">ImageFont</span><span class="o">.</span><span class="n">truetype</span><span class="p">(</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">"OUTPUT_PATH"</span><span class="p">],</span> <span class="s2">"theme/fonts/Yanone_Kaffeesatz_400.ttf"</span> <span class="p">),</span> <span class="mi">30</span> <span class="p">)</span>
+    <span class="n">draw</span><span class="o">.</span><span class="n">rectangle</span><span class="p">(</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">srcImage</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">40</span><span class="p">,</span> <span class="n">srcImage</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">srcImage</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">fill</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
+    <span class="n">draw</span><span class="o">.</span><span class="n">text</span><span class="p">(</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">srcImage</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">30</span><span class="p">),</span> <span class="n">captionText</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="n">captionColor</span><span class="p">,</span> <span class="n">font</span><span class="o">=</span><span class="n">font</span> <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">srcImage</span>
+
+
+<span class="n">tkimg</span><span class="o">.</span><span class="n">RegisterImgCommand</span><span class="p">(</span> <span class="s2">"newbadge"</span><span class="p">,</span> <span class="n">img_new_badge</span> <span class="p">)</span>
+<span class="n">tkimg</span><span class="o">.</span><span class="n">RegisterImgCommand</span><span class="p">(</span> <span class="s2">"caption"</span><span class="p">,</span> <span class="n">img_caption</span> <span class="p">)</span>
+</code></pre></div>
+<p>Which you could then use like this:</p>
+<div class="highlight"><pre><span></span><code>![Test Badge](/images/salad.jpg@fit(180)@caption( Salad Yums, lightgreen) )
+![Test Badge](/images/cake.jpg@fit(200,180)@newbadge()@caption( Try Some Cake, #09e8d2) )
+</code></pre></div>
+<p><img alt="Test Badge" src="/images/salad_ICU.jpg"/>
+<img alt="Test Badge" src="/images/cake_LkU.jpg"/></p>
+<p>Remember that the image will be updated if the arguments change, but not if the command code itself changes.
+During development, you may need to delete the image in the output directory to force it to rebuild for
+testing.</p>
+<p>If you're doing a lot of this, you'll probably want to put these in a module rather than in the bare config
+file.</p>
+<h2>Advanced Tip: Mixing with Jinja Macros</h2>
+<p>Mixing the image processing with jinja macros can create some powerful workflow tools. For example,
+here's a jinja macro I'm using to create a downscaled preview of an image that links to the original.</p>
+<p><img alt="Macro Example" src="/images/macro_example.png"/></p>
+<p>With this defined, I can use the <a href="jinja2content">https://github.com/pelican-plugins/jinja2content</a> plugin to include the image right into a post:</p>
+<p><img alt="Example Markdown" src="/images/diag_example.png"/></p>
+<p>And in the resulting page, the reader sees a small auto-generated preview image, and can click 
+to get the full size image. Very convienent.</p>
+<h2>Further Information</h2>
+<p>These docs use <code>TkPellyImg</code> to generate the examples, so they are a good place to look. Also feel free to contact me through twitter (<code>@joeld42</code>) or email (<code>joeld42@gmail.com</code>) if you have any questions, or submit an issue through the github page. </p>
+</section>
+<section class="body" id="extras">
+</section><!-- /#extras -->
+<footer class="body" id="contentinfo">
+<address class="vcard body" id="about">
+                Proudly powered by <a href="https://getpelican.com/">Pelican</a>, which takes great advantage of <a href="https://www.python.org/">Python</a>.
+                </address><!-- /#about -->
+<p>The theme is by <a href="https://www.smashingmagazine.com/2009/08/designing-a-html-5-layout-from-scratch/">Smashing Magazine</a>, thanks!</p>
+</footer><!-- /#contentinfo -->
+</body>
+</html>
