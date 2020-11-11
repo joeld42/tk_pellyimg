@@ -6,7 +6,9 @@ SITENAME = 'Documentation'
 SITEURL = ''
 
 PATH = 'content'
-OUTPUT_PATH = '../docs/'
+
+# Put output path here for github pages nonsense
+OUTPUT_PATH = '..'
 
 TIMEZONE = 'America/Los_Angeles'
 
