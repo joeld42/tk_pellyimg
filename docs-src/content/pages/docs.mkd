@@ -198,7 +198,7 @@ here's a jinja macro I'm using to create a downscaled preview of an image that l
 
 ![Macro Example](/images/macro_example.png)
 
-With this defined, I can use the [https://github.com/pelican-plugins/jinja2content](jinja2content) plugin to include the image right into a post:
+With this defined, I can use the [jinja2content plugin](https://github.com/pelican-plugins/jinja2content) to include the image right into a post:
 
 ![Example Markdown](/images/diag_example.png)
 
