@@ -2,6 +2,13 @@
 
 On demand image processing and thumbnailing for the Pelican static site generator.
 
+### Features
+* Comes with a handful of useful built-in image commands: thumbnails, fit rect, blur, and placeholders
+* Rebuilds images on demand only when params or source image changes, so build stays fast.
+* Applied to finalized HTML output, so image operations may be added in markdown, templates or even macros.
+* Easy to add custom image operations with PIL.
+
+
 TkPellyImg adds image-processing features that you can apply during static site generation. For example,
 it can generate thumbnails from images, or add badges or text. It is customizable so you can add your 
 own custom image processing operations using [Python PIL](https://pillow.readthedocs.io/en/stable/) code.
