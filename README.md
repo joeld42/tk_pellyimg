@@ -2,22 +2,23 @@
 
 On demand image processing and thumbnailing for the Pelican static site generator.
 
-NOTE: Under construction don't use it yet.
+TkPellyImg adds image-processing features that you can apply during static site generation. For example,
+it can generate thumbnails from images, or add badges or text. It is customizable so you can add your 
+own custom image processing operations using [Python PIL](https://pillow.readthedocs.io/en/stable/) code.
 
-Overview
+Using TkPellyImg
 ------------
 
+To apply TkPellyImg, just add the operations as a suffix to any image path.
 
-https://joeld42.github.io/tk_pellyimg/
+For example, this will take a couple high resolution images and generate small, square 200px thumbnails:
 
-This plugin can be installed via:
+```
+![Sandwich](/images/sandwich.jpg@fit(200))
+![Cake](/images/cake.jpg@fit(200))
+```
 
-    python -m pip install pelican-tkpellyimg
+![Sandwich](https://joeld42.github.io/tk_pellyimg/images/sandwich_FSx.jpg)
+![Cake](https://joeld42.github.io/tk_pellyimg/images/cake_BO7.jpg)
 
-(except not really)
-
-Contributing
-------------
-
-[existing issues]: https://github.com/pelican-plugins/tk_pellyimg/issues
-[Contributing to Pelican]: https://docs.getpelican.com/en/latest/contribute.html
+For more examples and details, see the [Documentation](https://joeld42.github.io/tk_pellyimg/pages/docs.html)
