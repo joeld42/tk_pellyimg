@@ -38,7 +38,7 @@ HTML is generated, so this can be in the markdown source,  in the theme template
 <p>This is a blurry sandwich:</p>
 <p><img alt="A Blurry Sandwich" src="/tk_pellyimg/images/sandwich_Juo.jpg"/></p>
 <h2>Built-in Commands</h2>
-<p>There are only a few built-in commands currently, mostly just want I needed for my current project. Still, it 
+<p>There are only a few built-in commands currently, mostly just what I needed for my current project. Still, it 
 should be enough to cover the most common use cases. If you need more, look at custom commands below, or 
 contact me and I'll attempt to add some next time I'm working on this.</p>
 <h2><code>@resize(width,[height])</code></h2>
@@ -53,7 +53,8 @@ from the other value and preserve aspect. </p>
 <img alt="Squashed Beans" src="/tk_pellyimg/images/beans_DzY.jpg"/></p>
 <h2><code>@fit(width,[height])</code></h2>
 <p>This will resize an image to the given width and height. If only one dimension is given it assumes you want a square image.
-Unlike resize, if the image aspect differs from the target size, it will crop the result so you get the best fit without stretching. It is good for making thumbnails or image grids. </p>
+Unlike resize, if the image aspect differs from the target size, it will crop the result so you get the best fit without 
+stretching. It is good for making thumbnails or image grids. </p>
 <div class="highlight"><pre><span></span><code>![Square Sandwich](/images/sandwich.jpg@fit(200) )
 ![Square Cake](/images/cake.jpg@fit(200) )
 ![Squashed Beans](/images/beans.jpg@fit(100,200) )
@@ -73,7 +74,7 @@ Unlike resize, if the image aspect differs from the target size, it will crop th
 <h2>Placeholders and non-existing images</h2>
 <p>If an image doesn't exist, <code>tkpellyimg</code> will create an empty 10x10 image. The filename is still
 important, as that determines the base filename and what format the image gets saved to.</p>
-<p>Some command ignore the source image. You can use these to generate a new image, as a placeholder
+<p>Some commands ignore the source image. You can use these to generate a new image, as a placeholder
 for design or even a stand-in or default image. </p>
 <h2><code>@blank(width,[height],[basecolor])</code></h2>
 <div class="highlight"><pre><span></span><code>![A green square](/images/greensquare.jpg@blank(100,100,green) )
@@ -151,7 +152,8 @@ here's a jinja macro I'm using to create a downscaled preview of an image that l
 <p>And in the resulting page, the reader sees a small auto-generated preview image, and can click 
 to get the full size image. Very convienent.</p>
 <h2>Further Information</h2>
-<p>These docs use <code>TkPellyImg</code> to generate the examples, so they are a good place to look. Also feel free to contact me through twitter (<code>@joeld42</code>) or email (<code>joeld42@gmail.com</code>) if you have any questions, or submit an issue through the github page. </p>
+<p>These docs use <code>TkPellyImg</code> to generate the examples, so their source (in this project in the <code>/docs-src</code> directory) are a good place to start.
+Also feel free to contact me through twitter (<code>@joeld42</code>) or email (<code>joeld42@gmail.com</code>) if you have any questions, or submit an issue through the github page. </p>
 </section>
 <section class="body" id="extras">
 </section><!-- /#extras -->

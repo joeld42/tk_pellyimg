@@ -13,8 +13,9 @@ from PIL import Image, ImageFilter, ImageColor, ImageDraw, ImageFont
 
 log = logging.getLogger(__name__)
 
-# NOCHECKIN: turn off the log limit bullshit filter
-log.disable_filter()
+# Uncomment this to turn off the misleanding log de-dupe filter
+# You can also use --logs-dedup-min-level
+# log.disable_filter()
 
 imgInfo = {}
 imgCmdTable = {}
@@ -27,8 +28,6 @@ kCfgPlaceholderFont = 'TKPELLYIMG_PLACEHOLDER_FONT'
 kCfgPlaceholderFontsize = 'TKPELLYIMG_PLACEHOLDER_FONTSIZE'
 
 def RegisterImgCommand( cmdName, cmdFunc ):
-    log.debug("Will register command %s", cmdName )
-
     if cmdName in imgCmdTable:
         log.warn( "TkPellyImg: Command %s already registered, will be replaced.", cmdName )
 
@@ -38,7 +37,6 @@ def RegisterImgCommand( cmdName, cmdFunc ):
 def imgCmdResize( cfg, srcImg, imgArgs ):
 
     # if the user only specifies one value, assume it's the width
-    print ("imgArgs is ", imgArgs )
     targetSize = tuple( map( lambda x: int(x), (imgArgs + [ 0 ])[:2] ) )
 
     # If both width/height are 0, do nothing
@@ -84,7 +82,6 @@ def imgCmdFit( cfg, srcImg, imgArgs ):
 def imgCmdBlur( cfg, srcImg, imgArgs ):
 
     blurSize = int(imgArgs[0])
-    print("will blur, size %f", blurSize )
     resultImg = srcImg.filter( ImageFilter.GaussianBlur(blurSize) )
 
     return resultImg
@@ -97,8 +94,6 @@ def imgCmdPlaceholder( cfg, srcImg, imgArgs ):
         targetHeight = int(imgArgs[1])
     else:
         targetHeight = targetWidth
-
-    print("In imgCmdPlaceholder")
 
     # Placeholder text, default to image size
     if len(imgArgs) > 2:
@@ -116,7 +111,6 @@ def imgCmdPlaceholder( cfg, srcImg, imgArgs ):
         lineColor = ImageColor.getrgb( imgArgs[4])
     else:
         # By default, generate a close tint for the text
-        log.debug("Generating line color")
         hsv = colorsys.rgb_to_hsv( float(targetColor[0]) / 255.0, float(targetColor[1]) / 255.0, float(targetColor[2]) / 255.0 )
         if (hsv[2] < 0.5):
             lineHsv = ( hsv[0], hsv[1], hsv[2] + 0.25 )
@@ -125,7 +119,6 @@ def imgCmdPlaceholder( cfg, srcImg, imgArgs ):
 
         lineColor = tuple(map( lambda x: int( x * 255.0), colorsys.hsv_to_rgb( *lineHsv ) ))
 
-    log.debug("Gen image")
     resultImg = Image.new( "RGB", (targetWidth, targetHeight), targetColor )
 
     draw = ImageDraw.Draw( resultImg )
@@ -178,14 +171,13 @@ class TkImgProcessStack:
         # Use the short hash to make the processed filename
         fn, ext = os.path.splitext( self.imgSrc )
         self.processedSrc = fn + "_" + self.shortHash + ext
-        log.debug("short hash is %s, procSrc %s", self.shortHash, self.processedSrc )
+        #log.debug("short hash is %s, procSrc %s", self.shortHash, self.processedSrc )
 
     def _tagImage( self, imgSrc, cmdList ):
         # Makes processed image uniquely idenfitiable from command list
 
         imgHashSrc = imgSrc
         for cmdArgs in cmdList:
-            log.debug( "CmdArgs is %s", cmdArgs )
             cmd, args = cmdArgs
             imgHashSrc += cmd
             for arg in args:
@@ -213,32 +205,9 @@ class TkImgProcessStack:
         return shortHash
 
 
-
-
-def test(sender):
-    log.debug("%s initialized !!", sender)
-
 def init_img_gen( sender ):
     # Reset the image info
     imgInfo = {}
-
-
-def process_generator_imgs( gen ):
-
-    if gen._content is None:
-        return
-
-    content = instance._content
-    log.debug ('TKPELLYIMG: Content is %d (%s)', len(content), content )
-    soup = BeautifulSoup( content, 'html.parser')
-
-    for img in soup( ['img', 'object']):
-        log.debug('TKPELLYIMG Image Src: %s', img['src'])
-
-
-
-    sys.exit(1)
-
 
 def _parseImgProcessCmds( imgsrc ):
 
@@ -262,10 +231,7 @@ def _parseImgProcessCmds( imgsrc ):
 
 def gather_imgs( contentpath, context ):
     # Add our info to context
-    #imgInfo['count'] = imgInfo.get( 'count', 0 ) + 1
-    #log.debug( 'TKPELLYIMG, contentpath %s, count is %d', contentpath, imgInfo['count'])
     fileExt = os.path.splitext( contentpath )[-1]
-    log.debug( 'TKPELLYIMG, contentpath %s, fileExt is %s', contentpath, fileExt )
 
     # Make sure it's a type of content that we care about
     if not fileExt.lower() in [ '.htm', '.html']:
@@ -285,15 +251,12 @@ def gather_imgs( contentpath, context ):
     didProcessImageTag = False
     soup = BeautifulSoup( html, 'html.parser')
     for img in soup( ['img', 'object']):
-        log.debug('TKPELLYIMG Image Src: %s', img['src'])
         strippedSrc, cmdList = _parseImgProcessCmds( img['src'] )
 
         # Do we need to modify this tag?
         if len(cmdList):
             # There are some commands tagged on this img src, make an ImgProcessStack for it and
             # store it to evaluate later
-            log.debug("Will Process %s (%s)", strippedSrc, cmdList )
-            #taggedImageName = _tagImage( strippedSrc, cmdList )
             imgCmd = TkImgProcessStack( strippedSrc, cmdList )
             didProcessImageTag = True
 
@@ -333,8 +296,7 @@ def file_needs_update( srcFile, destFile ):
 
     if not os.path.exists(srcFile):
         # No source file exists, e.g. the image is generated.
-        return True # dbg
-        #return False
+        return False
 
     srcmtime = os.path.getmtime( srcFile )
 
@@ -349,9 +311,7 @@ def generate_imgs( generator ):
     log.debug( 'TKPELLYIMG: in generate_imgs.' )
 
     outPath = generator.settings["OUTPUT_PATH"]
-    #dbg_dump_settings( generator )
 
-    c = 0
     for imgProc in list(imgInfo.values()):
         log.debug( 'img: %s (use count %d), %d commands: (%s)',
                    imgProc.processedSrc, imgProc.usageCount, len( imgProc.cmdList ), str(imgProc.cmdList) )
@@ -366,12 +326,9 @@ def generate_imgs( generator ):
                 currImg = Image.open( srcImgPath )
             else:
                 # If src image doesnt exist, use a 10x10 transparent image
-                print("Generating image for ", srcImgPath)
                 currImg = Image.new( "RGB", (10,10), (0,0,0))
 
             for imgCmd in imgProc.cmdList:
-
-                print('  CMDz: %s' % str(imgCmd))
                 cmdFunc = imgCmdTable.get( imgCmd[0], None )
                 if cmdFunc is None:
                     log.warn( "TkPellyImg: No command registered '%s'.", imgCmd[0] )
@@ -381,16 +338,6 @@ def generate_imgs( generator ):
 
             log.info("TkPellyImg: Writing processed Image: '%s'", imgProc.processedSrc )
             currImg.save( destImgPath )
-
-
-    log.debug("done")
-
-def process_articles( generator, content ):
-
-    for art in generator.articles:
-        log.debug("Art: %s (%s)", art, dir(content) )
-
-    sys.exit(1)
 
 def register_builtin_commands():
 

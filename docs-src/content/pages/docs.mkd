@@ -41,7 +41,7 @@ This is a blurry sandwich:
 Built-in Commands
 ---
 
-There are only a few built-in commands currently, mostly just want I needed for my current project. Still, it 
+There are only a few built-in commands currently, mostly just what I needed for my current project. Still, it 
 should be enough to cover the most common use cases. If you need more, look at custom commands below, or 
 contact me and I'll attempt to add some next time I'm working on this.
 
@@ -63,7 +63,8 @@ from the other value and preserve aspect.
 ```@fit(width,[height])```
 --
 This will resize an image to the given width and height. If only one dimension is given it assumes you want a square image.
-Unlike resize, if the image aspect differs from the target size, it will crop the result so you get the best fit without stretching. It is good for making thumbnails or image grids. 
+Unlike resize, if the image aspect differs from the target size, it will crop the result so you get the best fit without 
+stretching. It is good for making thumbnails or image grids. 
 
 ```markdown
 ![Square Sandwich](/images/sandwich.jpg@fit(200) )
@@ -92,7 +93,7 @@ Placeholders and non-existing images
 If an image doesn't exist, `tkpellyimg` will create an empty 10x10 image. The filename is still
 important, as that determines the base filename and what format the image gets saved to.
 
-Some command ignore the source image. You can use these to generate a new image, as a placeholder
+Some commands ignore the source image. You can use these to generate a new image, as a placeholder
 for design or even a stand-in or default image. 
 
 ```@blank(width,[height],[basecolor])```
@@ -207,4 +208,5 @@ to get the full size image. Very convienent.
 Further Information
 ---
 
-These docs use `TkPellyImg` to generate the examples, so they are a good place to look. Also feel free to contact me through twitter (`@joeld42`) or email (`joeld42@gmail.com`) if you have any questions, or submit an issue through the github page. 
+These docs use `TkPellyImg` to generate the examples, so their source (in this project in the `/docs-src` directory) are a good place to start.
+Also feel free to contact me through twitter (`@joeld42`) or email (`joeld42@gmail.com`) if you have any questions, or submit an issue through the github page. 
